@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<header>
+    <h1>Week 1: First Linux Web Server</h1>
+    <p>Linux virtual machine and web server project on CSC cPouta.</p>
+</header>
+
+<section>
+    <p><strong>Status:</strong> Completed</p>
+    <p>In this week's project i created Linux virtual machine in CSC cPouta. Configured security groups and installed Nginx to serve static HTML pages.</p>
+
+    <h2>1. Linux distribution and version</h2>
+    <p>Ubuntu 26.04 LTS</p>
+
+    <h2>2. What is Nginx?</h2>
+    <p>Nginx is light web server what handles incoming HTTP requests and delivers web pages to users.</p>
+
+    <h2>3. Commands used</h2>
+    <pre>
+1. Refresh the local package index with latest uptades.
+
+sudo apt update
+
+2. Download and install the nginx web server.
+
+sudo apt install -y nginx
+
+3. Enable nginx to start automatically on system boot.
+
+sudo systemctl enable nginx
+
+4. Check current running status and healt of nginx service.
+
+sudo systemctl status nginx
+    </pre>
+</section>
+{% endblock %}

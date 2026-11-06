@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ title }} | My Linux Server Portfolio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<nav aria-label="Main navigation">
+    <div class="nav-links">
+        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('week1') }}">Week 1</a>
+        <a href="{{ url_for('week2') }}">Week 2</a>
+    </div>
+</nav>
+<main>
+    {% block content %}{% endblock %}
+</main>
+<footer>
+    <p>My Linux Server Portfolio</p>
+    <p><a href="https://github.com/heikkijj/linux-administration">Source code on GitHub</a></p>
+</footer>
+</body>
+</html>

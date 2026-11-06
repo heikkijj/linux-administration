@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<header>
+    <h1>My Linux Server Portfolio</h1>
+    <p>Welcome to my Linux administration portfolio. Explore my coursework and cloud server projects built on CSC cPouta.</p>
+</header>
+
+<section aria-labelledby="coursework-title">
+    <h2 id="coursework-title">Coursework</h2>
+    <div class="page-links">
+        <a class="page-card" href="{{ url_for('week1') }}">
+            <h3>Week 1: First Linux Web Server</h3>
+            <p>Linux, Nginx, and serving a website.</p>
+        </a>
+        <a class="page-card" href="{{ url_for('week2') }}">
+            <h3>Week 2: Web Application &amp; Database</h3>
+            <p>A Flask application with a persistent visit counter.</p>
+        </a>
+    </div>
+</section>
+{% endblock %}

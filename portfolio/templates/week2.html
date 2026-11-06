@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<header>
+    <h1>Week 2: Dynamic web Application &amp; database</h1>
+    <p>A Flask application with an SQLite visit counter.</p>
+</header>
+
+<section>
+    <p><strong>Status:</strong> Completed</p>
+    <p>In this week`s project. I set up dynamic web app using Python Flask backend and SQLite database. i add visit counter to the web page to track and dispaly visit statistics.</p>
+    <h2>Visit counter</h2>
+    <p>This page has been visited <strong>{{ visits }}</strong> times.</p>
+</section>
+{% endblock %}
