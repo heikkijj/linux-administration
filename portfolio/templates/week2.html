@@ -8,8 +8,34 @@
 
 <section>
     <p><strong>Status:</strong> Completed</p>
-    <p>In this week`s project. I set up dynamic web app using Python Flask backend and SQLite database. i add visit counter to the web page to track and dispaly visit statistics.</p>
+    <p>This project uses a Python Flask backend and an SQLite database to track page visits.</p>
     <h2>Visit counter</h2>
     <p>This page has been visited <strong>{{ visits }}</strong> times.</p>
+    <h2>Database & storage</h2>
+    <p>The visit count is stored in the <code>stats</code> table in the SQLite database file <code>counter.db</code>. Each page visit increments the count, and the database file preserves it when the server restarts.</p>
+    <h2>Restart test</h2>
+    <p>The screenshots show the counter before a server reboot and after the server restarted. The count was still present after the reboot; it increased from 153 to 155 as additional visits were recorded.</p>
+    <div class="restart-gallery">
+        <figure>
+            <img src="{{ url_for('static', filename='Photos/counter-number1.jpg') }}" alt="Week 2 page showing the visit counter at 153 before the server reboot" loading="lazy">
+            <figcaption>1. The visit counter before the reboot: 153 visits.</figcaption>
+        </figure>
+        <figure>
+            <img src="{{ url_for('static', filename='Photos/start2.jpg') }}" alt="Server terminal before restarting the server" loading="lazy">
+            <figcaption>2. The server is running before the restart.</figcaption>
+        </figure>
+        <figure>
+            <img src="{{ url_for('static', filename='Photos/reboot2.jpg') }}" alt="The sudo reboot command and the SSH connection closing" loading="lazy">
+            <figcaption>3. The server reboot is started with <code>sudo reboot</code>.</figcaption>
+        </figure>
+        <figure>
+            <img src="{{ url_for('static', filename='Photos/restart1.jpg') }}" alt="Terminal after the server has rebooted and the SSH connection is available again" loading="lazy">
+            <figcaption>4. The server has restarted and the terminal is available again.</figcaption>
+        </figure>
+        <figure>
+            <img src="{{ url_for('static', filename='Photos/visit-counter2.jpg') }}" alt="Week 2 page showing the visit counter at 155 after the server reboot" loading="lazy">
+            <figcaption>5. The counter after the reboot: 155 visits, confirming the saved count remained available.</figcaption>
+        </figure>
+    </div>
 </section>
 {% endblock %}
