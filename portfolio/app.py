@@ -50,6 +50,11 @@ def week2():
     visits = record_visit()
     return render_template('week2.html', title='Week 2', visits=visits)
 
+@app.route('/week3/')
+def week3():
+    record_visit()
+    return render_template('week3.html', title='Week 3')
+
 if __name__ == '__main__':
     init_db()
     app.run(host='127.0.0.1', port=5000)
