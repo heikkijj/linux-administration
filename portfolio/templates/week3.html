@@ -7,7 +7,40 @@
 </header>
 
 <section>
-    <p><strong>Status:</strong> WORKING</p>
-    <p>This project demonstrates automated server monitoring using Linux bash scripting, systemd timers, and server status reporting.</p>
+    <p><strong>Status:</strong> In progress</p>
+    <p>This project demonstrates automated server monitoring using Linux bash scripting, systemd timers and server status reporting.</p>
+    <h2>Current server status</h2>
+    <iframe
+        class="status-report-frame"
+        src="{{ url_for('week3_status_report') }}"
+        title="Automatically updated server status report"
+        loading="lazy"></iframe>
+</section>
+
+<section>
+    <h2>How the report works</h2>
+    <p>The Bash script collects the server time and time zone, uptime, root filesystem usage, and total and available memory. It writes a new HTML report to a temporary file and then replaces the published report, so the page does not display a partly written file.</p>
+    <p>The disk status is <strong>OK</strong> below 80% root filesystem usage and <strong>WARNING</strong> at 80% or higher. A systemd service runs the script, and its timer starts after boot and schedules another update every minute. This page embeds the latest report from the Flask application.</p>
+
+    <h2>Commands used</h2>
+    <ul>
+        <li><code>date '+%Y-%m-%d %H:%M:%S %Z (%z)'</code> prints the report generation time with its time zone and UTC offset.</li>
+        <li><code>uptime -p</code> prints how long the server has been running.</li>
+        <li><code>df -P / | awk 'NR == 2 { print $5 }'</code> uses a pipe to read the root filesystem usage percentage from <code>df</code>.</li>
+        <li><code>free -h</code> displays memory totals and available memory in human-readable units.</li>
+    </ul>
+
+    <h2>Tests</h2>
+    <ul>
+        <li>Disk status: 50% produced <strong>OK</strong>; 80% produced <strong>WARNING</strong>; 90% produced <strong>WARNING</strong>.</li>
+        <li>Automatic updates: the enabled systemd timer successfully generated reports in consecutive one-minute intervals. The journal recorded successful runs at 15:10:26, 15:11:26, 15:12:27 and 15:13:28 UTC.</li>
+        <li>Reboot test: after the VM rebooted at 15:15:59 UTC, the Flask application and timer were active. The timer continued updating the report at 15:24:06, 15:25:07 and 15:26:07 UTC, and both public Week 3 URLs returned HTTP 200.</li>
+    </ul>
+
+    <h2>Problem and lesson learned</h2>
+    <p>An initial file transfer failed because the command used <code>app.py</code> without its project folder. Running SCP from the repository root requires the path <code>.\portfolio\app.py</code> and the remote destination; checking the transfer output helped catch the mistake before relying on the server copy.</p>
+
+    <h2>Source code</h2>
+    <p><a href="https://github.com/heikkijj/linux-administration">View the project repository on GitHub</a>.</p>
 </section>
 {% endblock %}

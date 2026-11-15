@@ -1,0 +1,10 @@
+[Unit]
+Description=Generate the server status report
+After=network.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/portfolio
+ExecStart=/home/ubuntu/portfolio/scripts/generate-status-report.sh

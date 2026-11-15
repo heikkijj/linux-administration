@@ -165,6 +165,15 @@ pre {
     margin-bottom: 0;
 }
 
+.status-report-frame {
+    display: block;
+    width: 100%;
+    min-height: 340px;
+    border: 1px solid #365573;
+    border-radius: 8px;
+    background: var(--navy-light);
+}
+
 footer {
     padding: 20px;
     background: #040f20;

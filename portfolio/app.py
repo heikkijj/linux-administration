@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, make_response, render_template, send_from_directory
 import sqlite3
 import os
 
@@ -54,6 +54,16 @@ def week2():
 def week3():
     record_visit()
     return render_template('week3.html', title='Week 3')
+
+
+@app.route('/week3/status-report/')
+def week3_status_report():
+    response = make_response(
+        send_from_directory(os.path.join(APP_DIR, 'static'), 'status-report.html')
+    )
+    response.headers['Cache-Control'] = 'no-store'
+    return response
+
 
 if __name__ == '__main__':
     init_db()
