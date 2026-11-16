@@ -38,8 +38,9 @@
     </ul>
 
     <h2>Problem and lesson learned</h2>
-    <p>An initial file transfer failed because the command used <code>app.py</code> without its project folder. Running SCP from the repository root requires the path <code>.\portfolio\app.py</code> and the remote destination; checking the transfer output helped catch the mistake before relying on the server copy.</p>
+    <p>Making and testing the bash script for printing server info was bit tricky becouse strict syntax and execute permissions (<code>chmod +x</code>). Testing commands one by one directly on server helped catch errors before running whole script.</p>
 
+    
     <h2>Source code</h2>
     <p><a href="https://github.com/heikkijj/linux-administration">View the project repository on GitHub</a>.</p>
 </section>
