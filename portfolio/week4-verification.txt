@@ -1,0 +1,52 @@
+Week 4: backup and replication verification
+Recorded on 22 November 2026. Times ending in Z are UTC.
+
+The commands below were run on the indicated servers over SSH.
+This is a recorded excerpt, not a complete log or an independently signed
+audit. It does not by itself verify restoration or reboot behavior.
+
+Server A: backup schedule
+
+$ crontab -l | grep '^[*]'
+*/15 * * * * /home/ubuntu/portfolio/scripts/backup-website.sh
+
+Server A: most recent backup log entries
+
+$ tail -n 12 /home/ubuntu/.local/state/portfolio-backup/backup.log
+2026-11-22T14:00:01Z START: portfolio backup
+Backup saved: portfolio-20261122T140002Z-cd7a4afdd17836df.tar.gz
+2026-11-22T14:00:02Z SUCCESS: portfolio backup
+2026-11-22T14:15:01Z START: portfolio backup
+Backup saved: portfolio-20261122T141502Z-4982b234db10bc91.tar.gz
+2026-11-22T14:15:02Z SUCCESS: portfolio backup
+2026-11-22T14:30:01Z START: portfolio backup
+Backup saved: portfolio-20261122T143002Z-9605b94b43b6adf1.tar.gz
+2026-11-22T14:30:02Z SUCCESS: portfolio backup
+2026-11-22T14:45:01Z START: portfolio backup
+Backup saved: portfolio-20261122T144502Z-f478d3c9441bbab9.tar.gz
+2026-11-22T14:45:02Z SUCCESS: portfolio backup
+
+Server B: latest saved backup archives
+
+$ ls -1 /home/ubuntu/backups/portfolio/portfolio-*.tar.gz | tail -n 4
+/home/ubuntu/backups/portfolio/portfolio-20261122T140002Z-cd7a4afdd17836df.tar.gz
+/home/ubuntu/backups/portfolio/portfolio-20261122T141502Z-4982b234db10bc91.tar.gz
+/home/ubuntu/backups/portfolio/portfolio-20261122T143002Z-9605b94b43b6adf1.tar.gz
+/home/ubuntu/backups/portfolio/portfolio-20261122T144502Z-f478d3c9441bbab9.tar.gz
+
+The archive names on B match the receiver confirmations in A's log.
+
+Server B: selected MariaDB replication status fields
+
+$ sudo -n mariadb -E -e 'SHOW SLAVE STATUS' | grep -E 'Master_Host:|Slave_IO_Running:|Slave_SQL_Running:|Seconds_Behind_Master:|Last_IO_Error:|Last_SQL_Error:'
+                   Master_Host: 192.168.1.189
+              Slave_IO_Running: Yes
+             Slave_SQL_Running: Yes
+         Seconds_Behind_Master: 0
+                 Last_IO_Error:
+                Last_SQL_Error:
+
+Server B: read-only setting and server ID
+
+$ sudo -n mariadb -Nse 'SELECT @@global.read_only, @@global.server_id'
+1	2

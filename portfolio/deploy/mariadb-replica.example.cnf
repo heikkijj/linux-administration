@@ -1,0 +1,5 @@
+# Server B: MariaDB replica settings.
+[mysqld]
+server-id = 2
+read_only = ON
+relay_log = /var/log/mysql/mysql-relay-bin.log

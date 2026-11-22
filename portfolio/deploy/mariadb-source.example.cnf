@@ -1,0 +1,7 @@
+# Server A: MariaDB source settings.
+# Verify the private address and database name before installing this file.
+[mysqld]
+server-id = 1
+bind-address = 192.168.1.189
+log_bin = /var/log/mysql/mysql-bin.log
+binlog_do_db = portfilio_db
