@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block content %}
+<header>
+    <h1>Week 4: Server Cloning, Backups &amp; Database Replication</h1>
+    <p>Two cPouta servers, protected website backups every 15 minutes, and a read-only MariaDB replica.</p>
+</header>
+
+<section>
+    {% if visits is not none %}
+    <h2>Read-only replica visitor counter</h2>
+    <p>Server B's local replicated database reports <strong id="replica-counter">{{ visits }}</strong> visits. Loading this page does not increment the counter.</p>
+    {% else %}
+    <p>The read-only replica counter is displayed on Server B.</p>
+    {% endif %}
+    <p>Server A is the original application server. Server B was created from a copy of A and given its own public IP. MariaDB continuously replicates database changes to B.</p>
+    <p class="server-links">
+        <a href="http://193.166.24.18/week2/">Open Server A's Week 2 counter</a>
+        <a href="http://195.148.20.142/week4/">Open Server B's read-only replica</a>
+    </p>
+</section>
+
+<section aria-labelledby="implementation-title">
+    <h2 id="implementation-title">Implementation, step by step</h2>
+    <div class="week4-carousel" data-carousel role="region" aria-roledescription="carousel" aria-label="Server setup steps">
+        <p class="carousel-status" data-carousel-status aria-live="polite">13 setup steps</p>
+        <div class="carousel-slides">
+            <article class="carousel-slide" role="group" aria-roledescription="slide" aria-label="1 of 13">
+                <h3>1. Create Server B in cPouta</h3>
+                <p>A snapshot of Server A was used to create a new instance, Server B. Each server has its own floating IP and internal address:</p>
+                <ul>
+                    <li>Server A: public <code>193.166.24.18</code>, internal <code>192.168.1.189</code></li>
+                    <li>Server B: public <code>195.148.20.142</code>, internal <code>192.168.1.33</code></li>
+                </ul>
+            </article>
+            <article class="carousel-slide" role="group" aria-roledescription="slide" aria-label="2 of 13">
+                <h3>2. Install MariaDB on Server B</h3>
+                <p>Update the package lists, install MariaDB and the Python driver, and check the service and cloned project files:</p>
+                <pre><code>sudo apt update
+sudo apt install -y mariadb-server python3-pymysql
+sudo systemctl status mariadb
+ls ~/portfolio</code></pre>
+                <p>The deployed application also installs its Python dependencies in its virtual environment.</p>
+            </article>
+            <article class="carousel-slide" role="group" aria-roledescription="slide" aria-label="3 of 13">
+                <h3>3. Install MariaDB on Server A</h3>
+                <p>Connect from the local computer using the SSH key, then update the package lists and install MariaDB and the Python driver:</p>
+                <pre><code>ssh -i &lt;SSH_KEY_PATH&gt; ubuntu@193.166.24.18
+sudo apt update
+sudo apt install -y mariadb-server python3-pymysql</code></pre>
+            </article>
+            <article class="carousel-slide" role="group" aria-roledescription="slide" aria-label="4 of 13">
+                <h3>4. Create the database on Server A</h3>
+                <p>Open the MariaDB console with <code>sudo mysql</code>, create the database and counter row, and configure the original local writer account:</p>
+                <pre><code>CREATE DATABASE portfilio_db;
+USE portfilio_db;
+CREATE TABLE visitor_counter (
+    id INT PRIMARY KEY,
+    count INT NOT NULL DEFAULT 0
+);
+INSERT INTO visitor_counter (id, count) VALUES (1, 0);
+CREATE USER 'app_writer'@'localhost' IDENTIFIED BY '&lt;PASSWORD&gt;';
+GRANT SELECT, UPDATE, INSERT ON portfilio_db.* TO 'app_writer'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;</code></pre>
+                <p>The application uses <code>app_writer</code> on A. Password placeholders are not real credentials.</p>
+            </article>
+            <article class="carousel-slide" role="group" aria-roledescription="slide" aria-label="5 of 13">
+                <h3>5. Configure Server A as the source</h3>
+                <p>Edit <code>/etc/mysql/mariadb.conf.d/50-server.cnf</code> with <code>sudo nano</code>. The source settings include:</p>
+                <pre><code>bind-address = 0.0.0.0
+server-id = 1
+log_bin = /var/log/mysql/mysql-bin.log
+binlog_do_db = portfilio_db</code></pre>
+                <p>Restart MariaDB with <code>sudo systemctl restart mariadb</code>. The database name must match exactly: the original <code>portfolio_db</code> filter did not log changes to <code>portfilio_db</code>. Network access must be restricted to the intended hosts.</p>
+            </article>
+            <article class="carousel-slide" role="group" aria-roledescription="slide" aria-label="6 of 13">
+                <h3>6. Create the replication user on A</h3>
+                <p>In the MariaDB console, create a dedicated account restricted to Server B's internal IP and inspect the source status:</p>
+                <pre><code>CREATE USER 'replicator'@'192.168.1.33' IDENTIFIED BY '&lt;PASSWORD&gt;';
+GRANT REPLICATION SLAVE ON *.* TO 'replicator'@'192.168.1.33';
+FLUSH PRIVILEGES;
+SHOW MASTER STATUS;
+EXIT;</code></pre>
+                <p>The source log file and position must match the database snapshot used to initialize B; a later status check alone is not sufficient.</p>
+            </article>
+            <article class="carousel-slide" role="group" aria-roledescription="slide" aria-label="7 of 13">
+                <h3>7. Transfer the initial database snapshot</h3>
+                <p>On A, create an InnoDB snapshot with its corresponding binary-log coordinates:</p>
+                <pre><code>sudo mysqldump --single-transaction --master-data=2 portfilio_db &gt; ~/portfilio_init.sql</code></pre>
+                <p>From the local computer, transfer the dump from A to B:</p>
+                <pre><code>scp -i &lt;SSH_KEY_PATH&gt; ubuntu@193.166.24.18:~/portfilio_init.sql .
+scp -i &lt;SSH_KEY_PATH&gt; portfilio_init.sql ubuntu@195.148.20.142:~/</code></pre>
+                <p>Use the coordinates recorded in that dump. A manual <code>FLUSH TABLES WITH READ LOCK</code> lock is released when its MariaDB session exits; a separate <code>UNLOCK TABLES</code> session cannot maintain or release it. Keep dumps private and out of the website and repository.</p>
+            </article>
+            <article class="carousel-slide" role="group" aria-roledescription="slide" aria-label="8 of 13">
+                <h3>8. Configure Server B as the replica</h3>
+                <p>Connect to B and edit its MariaDB configuration:</p>
+                <pre><code>ssh -i &lt;SSH_KEY_PATH&gt; ubuntu@195.148.20.142
+sudo nano /etc/mysql/mariadb.conf.d/50-server.cnf</code></pre>
+                <p>Give B a different server ID and enable read-only mode:</p>
+                <pre><code>server-id = 2
+read_only = 1</code></pre>
+            </article>
+            <article class="carousel-slide" role="group" aria-roledescription="slide" aria-label="9 of 13">
+                <h3>9. Restart MariaDB on B</h3>
+                <p>Apply the replica settings and check that the database service is running:</p>
+                <pre><code>sudo systemctl restart mariadb
+sudo systemctl status mariadb</code></pre>
+            </article>
+            <article class="carousel-slide" role="group" aria-roledescription="slide" aria-label="10 of 13">
+                <h3>10. Import the initial snapshot on B</h3>
+                <p>Create the database on B and import the dump transferred from A:</p>
+                <pre><code>sudo mysql -e "CREATE DATABASE portfilio_db;"
+sudo mysql portfilio_db &lt; ~/portfilio_init.sql</code></pre>
+                <p>Importing a snapshot into an existing database can overwrite data; the snapshot and its recorded log coordinates must belong together.</p>
+            </article>
+            <article class="carousel-slide" role="group" aria-roledescription="slide" aria-label="11 of 13">
+                <h3>11. Start replication and set up read access</h3>
+                <p>In B's MariaDB console, use the source's internal address and the coordinates from the snapshot. The values in angle brackets are placeholders:</p>
+                <pre><code>CHANGE MASTER TO
+    MASTER_HOST='192.168.1.189',
+    MASTER_USER='replicator',
+    MASTER_PASSWORD='&lt;PASSWORD&gt;',
+    MASTER_LOG_FILE='&lt;SNAPSHOT_LOG_FILE&gt;',
+    MASTER_LOG_POS=&lt;SNAPSHOT_LOG_POSITION&gt;;
+START SLAVE;
+CREATE USER 'app_reader'@'localhost' IDENTIFIED BY '&lt;PASSWORD&gt;';
+GRANT SELECT ON portfilio_db.* TO 'app_reader'@'localhost';
+FLUSH PRIVILEGES;</code></pre>
+                <p>The application uses <code>app_reader</code> on B, which has only <code>SELECT</code> access to the database. Never publish real passwords.</p>
+            </article>
+            <article class="carousel-slide" role="group" aria-roledescription="slide" aria-label="12 of 13">
+                <h3>12. Check and correct the starting position</h3>
+                <p>On B, <code>SHOW SLAVE STATUS\G</code> initially showed an I/O error because position 342 was incorrect. The recorded source position was 328. The correction used:</p>
+                <pre><code>STOP SLAVE;
+CHANGE MASTER TO
+    MASTER_LOG_FILE='mysql-bin.000001',
+    MASTER_LOG_POS=328;
+START SLAVE;
+SHOW SLAVE STATUS\G
+EXIT;</code></pre>
+                <p>These are historical values, not current setup instructions. A new replica must use the log file and position associated with its own snapshot.</p>
+            </article>
+            <article class="carousel-slide" role="group" aria-roledescription="slide" aria-label="13 of 13">
+                <h3>13. Connect and verify the counter</h3>
+                <p>The Flask application originally stored its visitor counter in an SQLite database. It was changed to use the existing MariaDB counter: Server A increments it, and Server B reads the replicated value from its own local database without incrementing it. The MariaDB counter continued from its existing value; the old SQLite database was kept.</p>
+                <p>Check that <code>Slave_IO_Running</code> and <code>Slave_SQL_Running</code> are <code>Yes</code>, and inspect <code>Seconds_Behind_Master</code> and any errors. Then load A's Week 2 page and confirm that the new count appears on B's Week 4 page without B incrementing it.</p>
+                <p>A healthy replication status alone is not enough: the database filter and the actual replicated value must also be checked.</p>
+            </article>
+        </div>
+        <div class="carousel-controls" data-carousel-controls hidden>
+            <button type="button" data-carousel-previous>Previous</button>
+            <button type="button" data-carousel-next>Next</button>
+        </div>
+        <div class="carousel-indicators" data-carousel-indicators role="group" aria-label="Choose an implementation step"></div>
+    </div>
+</section>
+
+<section>
+    <h2>Storage, backups &amp; access</h2>
+    <ul>
+        <li><strong>Website files:</strong> The Flask website runs from <code>/home/ubuntu/portfolio</code>. Its backups are stored outside the public website in <code>/home/ubuntu/backups/portfolio</code> on B.</li>
+        <li><strong>MariaDB:</strong> Each server keeps its own local database storage. A records database changes in its binary log; B applies them to its local replica.</li>
+        <li><strong>Linux access:</strong> The <code>ubuntu</code> account administers the servers with <code>sudo</code>. MariaDB runs under its dedicated <code>mysql</code> system account. Application database credentials are stored in a private file outside the website.</li>
+        <li><strong>Database access:</strong> A's local <code>app_writer</code> account has <code>SELECT</code>, <code>UPDATE</code> and <code>INSERT</code> access to the database. B's local <code>app_reader</code> account has only read access. The separate <code>replicator</code> account is restricted to replication from B.</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Website backups and continuous replication</h2>
+    <p>A's <code>ubuntu</code> crontab runs <code>backup-website.sh</code> every 15 minutes (<code>*/15 * * * *</code>). The script creates a compressed archive of <code>/home/ubuntu/portfolio</code> locally before sending it to B over SSH. A dedicated key is restricted to A's internal address and B's backup receiver.</p>
+    <p>B checks the archive and stores timestamped versions in a private directory, retaining the latest 96. A logs every run and its result in <code>~/.local/state/portfolio-backup/backup.log</code>. The archive excludes the virtual environment, caches and temporary status-report files. The active MariaDB database and system-level settings are not included in this website backup.</p>
+    <p>MariaDB replication continuously sends A's binary-log changes to B. The initial database dump established the starting copy; after that, B applied new changes from A. Replication is not a replacement for historical backups: a deletion, corruption, or unwanted change can also be replicated, while older backup versions let you recover an earlier state.</p>
+</section>
+
+<section>
+    <h2>Verification</h2>
+    <ul>
+        <li>Both submitted counter pages are publicly accessible: <a href="http://193.166.24.18/week2/">Server A /week2/</a> and <a href="http://195.148.20.142/week4/">Server B /week4/</a>.</li>
+        <li>In a public-page test, B stayed at 5 when reloaded. Loading A increased the counter to 6, which then appeared on B; reloading B again kept it at 6.</li>
+        <li>MariaDB reported both replication threads running and a replication delay of 0 seconds in the recorded status check.</li>
+        <li>Manual backups succeeded, including a test during repeated status-report updates. A page restored to a separate location matched the original by SHA-256.</li>
+        <li>On 22 November 2026, the 08:00 UTC scheduled backup succeeded, but the 08:15 run failed while the status report was updating. After the script was corrected, the 08:30, 08:45 and 09:00 UTC scheduled runs succeeded; the cron log and separate archives on B confirmed the runs.</li>
+        <li>After B was rebooted at 09:55 UTC on 22 November 2026, its website, status report and MariaDB replica were available. Loading A increased the counter from 40 to 41; B displayed 41 and reloading B did not increment it.</li>
+        <li>A's next scheduled backup at 10:00 UTC succeeded after B's reboot. The archive was present on B, passed integrity checks and its Week 4 page matched A's file by SHA-256.</li>
+    </ul>
+</section>
+
+<section>
+    <h2>Problem solved and lesson learned</h2>
+    <p>Replication initially stopped because B had the wrong starting position in A's binary log. Checking the source status and correcting the position restored replication. I learned that the initial database copy and its matching log position must agree, and that replication keeps servers current but cannot replace versioned backups.</p>
+    <p>A later test revealed that A's binary-log filter named <code>portfolio_db</code>, while the actual database is <code>portfilio_db</code>. Correcting the filter allowed counter updates to reach B. Running replication threads alone did not prove that the correct database was being replicated.</p>
+    <p>The status report changed the website directory during a scheduled backup, causing <code>tar</code> to report an error. The backup now lists files without recursive directory scans, skips temporary report files and completes the local archive before sending it, so a failed archive is not transferred.</p>
+    <h2>Source code</h2>
+    <p>The <a href="https://github.com/heikkijj/linux-administration">project GitHub repository</a> is the public code location for this work.</p>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='week4-carousel.js') }}" defer></script>
+{% endblock %}

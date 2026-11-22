@@ -143,6 +143,81 @@ pre {
     color: var(--muted);
 }
 
+.week4-carousel {
+    margin-top: 20px;
+}
+
+.carousel-status {
+    margin: 0 0 12px;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.carousel-slides {
+    display: grid;
+    gap: 16px;
+}
+
+.carousel-slide {
+    padding: 24px;
+    border: 1px solid #365573;
+    border-radius: 8px;
+    background: var(--navy);
+}
+
+.carousel-slide h3 {
+    margin: 0 0 8px;
+}
+
+.carousel-slide pre {
+    overflow-wrap: anywhere;
+}
+
+.carousel-slide > :last-child {
+    margin-bottom: 0;
+}
+
+.carousel-controls,
+.carousel-indicators {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.carousel-controls button,
+.carousel-indicators button {
+    min-height: 42px;
+    padding: 8px 14px;
+    border: 1px solid #52718f;
+    border-radius: 6px;
+    background: var(--navy);
+    color: var(--white);
+    font: inherit;
+    cursor: pointer;
+}
+
+.carousel-controls button:hover,
+.carousel-controls button:focus-visible,
+.carousel-indicators button:hover,
+.carousel-indicators button:focus-visible,
+.carousel-indicators button[aria-current="step"] {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.carousel-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.server-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+}
+
 .page-links {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

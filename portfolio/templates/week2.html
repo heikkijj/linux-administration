@@ -3,16 +3,21 @@
 {% block content %}
 <header>
     <h1>Week 2: Dynamic web Application &amp; database</h1>
-    <p>A Flask application with an SQLite visit counter.</p>
+    <p>A Flask application with a visit counter.</p>
 </header>
 
 <section>
     <p><strong>Status:</strong> Completed</p>
-    <p>This project uses a Python Flask backend and an SQLite database to track page visits.</p>
+    <p>This project uses a Python Flask backend to track page visits.</p>
     <h2>Visit counter</h2>
     <p>This page has been visited <strong>{{ visits }}</strong> times.</p>
     <h2>Database & storage</h2>
+    {% if counter_backend == 'mariadb' %}
+    <p>The visit count is stored in MariaDB's <code>visitor_counter</code> table.
+    {% if counter_role == 'replica' %}This server reads its local replica without changing the count.{% else %}Each page visit increments the count on the source server.{% endif %}</p>
+    {% else %}
     <p>The visit count is stored in the <code>stats</code> table in the SQLite database file <code>counter.db</code>. Each page visit increments the count, and the database file preserves it when the server restarts.</p>
+    {% endif %}
     <h2>Restart test</h2>
     <p>The screenshots show the counter before a server reboot and after the server restarted. The count was still present after the reboot; it increased from 153 to 155 as additional visits were recorded.</p>
     <div class="restart-gallery">
